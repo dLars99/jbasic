@@ -11,7 +11,7 @@ export default function Editor({ value, onChange }: Props): JSX.Element {
       <textarea
         className="editor"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(event) => onChange(event.target.value)}
         spellCheck={false}
       />
     </div>

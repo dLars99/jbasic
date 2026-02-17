@@ -1,4 +1,5 @@
 import type { RunnerCtx } from "../basic";
+
 export async function handleInput(ctx: RunnerCtx, stmt: string) {
   let name: string | null = null;
   let promptText = "";
@@ -17,10 +18,10 @@ export async function handleInput(ctx: RunnerCtx, stmt: string) {
     try {
       const val = await ctx.onInput(promptText);
       const num = Number(val);
-      ctx.env[name] = isNaN(num) ? String(val) : num;
-    } catch (e) {
-      ctx.env[name] = 0;
+      ctx.environment[name] = isNaN(num) ? String(val) : num;
+    } catch (err) {
+      ctx.environment[name] = 0;
     }
   }
-  ctx.ip += 1;
+  ctx.instructionPointer += 1;
 }

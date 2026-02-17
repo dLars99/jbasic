@@ -22,54 +22,54 @@
     <script type="module">
       import { createRunner } from "/src/interpreter/basic.ts";
 
-      const outEl = document.getElementById("output");
+      const outputElement = document.getElementById("output");
       function append(msg) {
-        const line = document.createElement("div");
-        line.textContent = String(msg);
-        outEl.appendChild(line);
+        const lineEl = document.createElement("div");
+        lineEl.textContent = String(msg);
+        outputElement.appendChild(lineEl);
       }
 
-      let pendingInputEl = null;
+      let pendingInputElement = null;
       function requestInput(promptText) {
         return new Promise((resolve) => {
-          const line = document.createElement("div");
-          line.style.fontFamily = "monospace";
-          line.style.display = "flex";
-          line.style.alignItems = "center";
-          const promptSpan = document.createElement("span");
-          if (promptText) promptSpan.textContent = promptText + " ";
-          const inputEl = document.createElement("input");
-          inputEl.type = "text";
-          inputEl.className = "jbasic-runtime-input";
-          inputEl.style.background = "transparent";
-          inputEl.style.color = "inherit";
-          inputEl.style.border = "none";
-          inputEl.style.outline = "none";
-          inputEl.style.font = "inherit";
-          inputEl.style.width = "40%";
-          inputEl.style.caretColor = "white";
+          const lineEl = document.createElement("div");
+          lineEl.style.fontFamily = "monospace";
+          lineEl.style.display = "flex";
+          lineEl.style.alignItems = "center";
+          const promptSpanEl = document.createElement("span");
+          if (promptText) promptSpanEl.textContent = promptText + " ";
+          const inputElement = document.createElement("input");
+          inputElement.type = "text";
+          inputElement.className = "jbasic-runtime-input";
+          inputElement.style.background = "transparent";
+          inputElement.style.color = "inherit";
+          inputElement.style.border = "none";
+          inputElement.style.outline = "none";
+          inputElement.style.font = "inherit";
+          inputElement.style.width = "40%";
+          inputElement.style.caretColor = "white";
 
-          line.appendChild(promptSpan);
-          line.appendChild(inputEl);
-          outEl.appendChild(line);
-          inputEl.focus();
-          pendingInputEl = inputEl;
+          lineEl.appendChild(promptSpanEl);
+          lineEl.appendChild(inputElement);
+          outputElement.appendChild(lineEl);
+          inputElement.focus();
+          pendingInputElement = inputElement;
 
           function finish(val) {
             try {
-              inputEl.remove();
-            } catch (e) {}
-            const valSpan = document.createElement("span");
-            valSpan.textContent = String(val == null ? "" : val);
-            promptSpan.appendChild(valSpan);
-            pendingInputEl = null;
+              inputElement.remove();
+            } catch (err) {}
+            const valueSpan = document.createElement("span");
+            valueSpan.textContent = String(val == null ? "" : val);
+            promptSpanEl.appendChild(valueSpan);
+            pendingInputElement = null;
             resolve(val == null ? "" : val);
           }
 
-          inputEl.addEventListener("keydown", (ev) => {
-            if (ev.key === "Enter") {
-              finish(inputEl.value);
-            } else if (ev.key === "Escape") {
+          inputElement.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+              finish(inputElement.value);
+            } else if (event.key === "Escape") {
               finish("");
             }
           });
@@ -83,18 +83,18 @@
 
           // safety timeout: resolve empty after 2 minutes
           setTimeout(() => {
-            if (pendingInputEl === inputEl) finish("");
+            if (pendingInputElement === inputElement) finish("");
           }, 120000);
         });
       }
 
-      window.addEventListener("message", (ev) => {
-        const msg = ev.data;
-        if (!msg || !msg.type) return;
-        if (msg.type === "run") {
-          outEl.innerHTML = "";
+      window.addEventListener("message", (event) => {
+        const message = event.data;
+        if (!message || !message.type) return;
+        if (message.type === "run") {
+          outputElement.innerHTML = "";
           const runner = createRunner(
-            msg.code,
+            message.code,
             (o) => {
               append(o);
               window.opener &&
@@ -108,17 +108,20 @@
           );
           window._jbasic_runner = runner;
           runner.start();
-        } else if (msg.type === "stop") {
+        } else if (message.type === "stop") {
           if (window._jbasic_runner) window._jbasic_runner.stop();
           append("[Stopped]");
-        } else if (msg.type === "input") {
-          console.log("runtime <- opener: input", msg.value);
-          if (pendingInputEl) {
-            pendingInputEl.value = msg.value == null ? "" : msg.value;
-            const ev = new KeyboardEvent("keydown", { key: "Enter" });
-            pendingInputEl.dispatchEvent(ev);
+        } else if (message.type === "input") {
+          console.log("runtime <- opener: input", message.value);
+          if (pendingInputElement) {
+            pendingInputElement.value =
+              message.value == null ? "" : message.value;
+            const keyboardEvent = new KeyboardEvent("keydown", {
+              key: "Enter",
+            });
+            pendingInputElement.dispatchEvent(keyboardEvent);
           } else {
-            append(String(msg.value));
+            append(String(message.value));
           }
         }
       });

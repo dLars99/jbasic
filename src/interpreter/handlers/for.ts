@@ -1,15 +1,21 @@
 import type { RunnerCtx } from "../basic";
+
 export function handleFor(ctx: RunnerCtx, stmt: string) {
-  const m = stmt.match(
+  const match = stmt.match(
     /^FOR\s+([A-Za-z][A-Za-z0-9_]*)\s*=\s*(.+?)\s+TO\s+(.+?)(?:\s+STEP\s+(.+))?$/i,
   );
-  if (m) {
-    const [, name, startExpr, endExpr, stepExpr] = m;
+  if (match) {
+    const [, name, startExpr, endExpr, stepExpr] = match;
     const start = ctx.safeEvalExpr(startExpr);
     const end = ctx.safeEvalExpr(endExpr);
     const step = stepExpr ? ctx.safeEvalExpr(stepExpr) : 1;
-    ctx.env[name] = start;
-    ctx.forStack.push({ name, end, step, loopIp: ctx.ip });
+    ctx.environment[name] = start;
+    ctx.loopStack.push({
+      name,
+      end,
+      step,
+      loopInstruction: ctx.instructionPointer,
+    });
   }
-  ctx.ip += 1;
+  ctx.instructionPointer += 1;
 }

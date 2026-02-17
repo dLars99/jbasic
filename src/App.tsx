@@ -14,11 +14,11 @@ export default function App(): JSX.Element {
   }, [code]);
 
   useEffect(() => {
-    function onMessage(ev: MessageEvent) {
-      const msg = ev.data;
-      if (!msg || !msg.type) return;
-      if (msg.type === "output") {
-        console.log("Runtime:", msg.payload);
+    function onMessage(event: MessageEvent) {
+      const message = event.data;
+      if (!message || !message.type) return;
+      if (message.type === "output") {
+        console.log("Runtime:", message.payload);
       }
     }
     window.addEventListener("message", onMessage);
@@ -26,15 +26,19 @@ export default function App(): JSX.Element {
   }, []);
 
   const handleRun = () => {
-    const w = window.open(
+    const runtimeWindow = window.open(
       "/runtime.html",
       "jbasic-runtime",
       "width=600,height=400",
     );
-    runtimeWindowRef.current = w;
-    const onReady = (ev: MessageEvent) => {
-      if (ev.source === w && ev.data && ev.data.type === "ready") {
-        w!.postMessage({ type: "run", code }, "*");
+    runtimeWindowRef.current = runtimeWindow;
+    const onReady = (event: MessageEvent) => {
+      if (
+        event.source === runtimeWindow &&
+        event.data &&
+        event.data.type === "ready"
+      ) {
+        runtimeWindow!.postMessage({ type: "run", code }, "*");
         window.removeEventListener("message", onReady as EventListener);
       }
     };
@@ -42,18 +46,18 @@ export default function App(): JSX.Element {
   };
 
   const handleStop = () => {
-    const w = runtimeWindowRef.current;
-    if (w && !w.closed) {
-      w.postMessage({ type: "stop" }, "*");
-      w.close();
+    const runtimeWindow = runtimeWindowRef.current;
+    if (runtimeWindow && !runtimeWindow.closed) {
+      runtimeWindow.postMessage({ type: "stop" }, "*");
+      runtimeWindow.close();
       runtimeWindowRef.current = null;
     }
   };
 
   function sendInputResponse(value: string) {
-    const target = runtimeWindowRef.current;
-    if (target && !target.closed)
-      target.postMessage({ type: "input", value }, "*");
+    const targetWindow = runtimeWindowRef.current;
+    if (targetWindow && !targetWindow.closed)
+      targetWindow.postMessage({ type: "input", value }, "*");
   }
 
   return (

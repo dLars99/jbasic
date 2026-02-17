@@ -10,14 +10,19 @@ import { handleEnd } from "./handlers/end";
 export type Stmt = { lineno: number | null; text: string };
 
 export type RunnerCtx = {
-  env: Record<string, string | number | undefined>;
-  stmts: Stmt[];
-  lineToIndex: Record<number, number>;
-  forStack: Array<{ name: string; end: number; step: number; loopIp: number }>;
+  environment: Record<string, string | number | undefined>;
+  statements: Stmt[];
+  lineNumberToIndex: Record<number, number>;
+  loopStack: Array<{
+    name: string;
+    end: number;
+    step: number;
+    loopInstruction: number;
+  }>;
   onOutput: (s: string) => void;
   onInput: (prompt: string) => Promise<string>;
   safeEvalExpr: (expr: string) => any;
-  ip: number;
+  instructionPointer: number;
 };
 
 export function createRunner(
@@ -27,28 +32,30 @@ export function createRunner(
 ) {
   const rawLines = code.split(/\r?\n/).map((l) => l.replace(/\r/g, ""));
 
-  const stmts: Stmt[] = [];
-  const lineToIndex: Record<number, number> = Object.create(null);
+  const statements: Stmt[] = [];
+  const lineNumberToIndex: Record<number, number> = Object.create(null);
   rawLines.forEach((l) => {
     const text = l.trim();
     if (!text) return;
-    const m = text.match(/^\s*([0-9]+)\s+(.*)$/);
-    if (m) {
-      const lineno = Number(m[1]);
-      const body = m[2].trim();
-      lineToIndex[lineno] = stmts.length;
-      stmts.push({ lineno, text: body });
+    const match = text.match(/^\s*([0-9]+)\s+(.*)$/);
+    if (match) {
+      const lineno = Number(match[1]);
+      const body = match[2].trim();
+      lineNumberToIndex[lineno] = statements.length;
+      statements.push({ lineno, text: body });
     } else {
-      stmts.push({ lineno: null, text });
+      statements.push({ lineno: null, text });
     }
   });
 
-  const env: Record<string, string | number | undefined> = Object.create(null);
+  const environment: Record<string, string | number | undefined> =
+    Object.create(null);
   let stopped = false;
 
   function safeEvalExpr(expr: string) {
     expr = String(expr).trim();
     if (/^".*"$/.test(expr)) return expr.slice(1, -1);
+    // Replace identifiers only outside quoted literals
     let out = "";
     let i = 0;
     while (i < expr.length) {
@@ -71,7 +78,7 @@ export function createRunner(
         const replacedPart = codePart.replace(
           /[A-Za-z][A-Za-z0-9_]*/g,
           (name) => {
-            const v = env[name];
+            const v = environment[name];
             if (typeof v === "string")
               return `"${String(v).replace(/"/g, '\\"')}"`;
             if (v == null) return "0";
@@ -85,34 +92,34 @@ export function createRunner(
     try {
       // eslint-disable-next-line no-new-func
       return Function(`"use strict"; return (${out})`)();
-    } catch (e) {
+    } catch (err) {
       try {
-        console.error("safeEvalExpr error", e, "expr:", expr, "eval->", out);
+        console.error("safeEvalExpr error", err, "expr:", expr, "eval->", out);
       } catch (_) {}
       return 0;
     }
   }
 
   return (function runnerFactory() {
-    let ip = 0;
-    const forStack: RunnerCtx["forStack"] = [];
+    let instructionPointer = 0;
+    const loopStack: RunnerCtx["loopStack"] = [];
     const maxStepsPerTick = 500;
 
     const ctx: RunnerCtx = {
-      env,
-      stmts,
-      lineToIndex,
-      forStack,
+      environment,
+      statements,
+      lineNumberToIndex,
+      loopStack,
       onOutput,
       onInput,
       safeEvalExpr,
-      ip: 0,
+      instructionPointer: 0,
     };
 
     async function run() {
       let steps = 0;
-      while (ip < stmts.length && !stopped) {
-        const stmt = stmts[ip].text;
+      while (instructionPointer < statements.length && !stopped) {
+        const stmt = statements[instructionPointer].text;
         steps += 1;
         if (steps >= maxStepsPerTick) {
           steps = 0;
@@ -120,40 +127,40 @@ export function createRunner(
           if (stopped) break;
         }
 
-        ctx.ip = ip;
-        const up = stmt.trim();
+        ctx.instructionPointer = instructionPointer;
+        const trimmedStmt = stmt.trim();
         try {
           let res: any;
-          if (/^PRINT\b/i.test(up)) {
+          if (/^PRINT\b/i.test(trimmedStmt)) {
             res = handlePrint(ctx, stmt);
-          } else if (/^LET\b/i.test(up)) {
+          } else if (/^LET\b/i.test(trimmedStmt)) {
             res = handleLet(ctx, stmt);
-          } else if (/^GOTO\b/i.test(up)) {
+          } else if (/^GOTO\b/i.test(trimmedStmt)) {
             res = handleGoto(ctx, stmt);
-          } else if (/^IF\b/i.test(up)) {
+          } else if (/^IF\b/i.test(trimmedStmt)) {
             res = handleIf(ctx, stmt);
-          } else if (/^FOR\b/i.test(up)) {
+          } else if (/^FOR\b/i.test(trimmedStmt)) {
             res = handleFor(ctx, stmt);
-          } else if (/^NEXT\b/i.test(up)) {
+          } else if (/^NEXT\b/i.test(trimmedStmt)) {
             res = handleNext(ctx, stmt);
-          } else if (/^INPUT\b/i.test(up)) {
+          } else if (/^INPUT\b/i.test(trimmedStmt)) {
             res = handleInput(ctx, stmt);
-          } else if (/^END\b/i.test(up)) {
+          } else if (/^END\b/i.test(trimmedStmt)) {
             res = handleEnd(ctx, stmt);
           } else {
             onOutput("UNRECOGNIZED: " + stmt);
-            ctx.ip += 1;
+            ctx.instructionPointer += 1;
           }
 
           if (res && typeof res.then === "function") await res;
-        } catch (e) {
+        } catch (err) {
           try {
-            console.error("runtime handler error", e);
+            console.error("runtime handler error", err);
           } catch (_) {}
-          ctx.ip += 1;
+          ctx.instructionPointer += 1;
         }
 
-        ip = ctx.ip;
+        instructionPointer = ctx.instructionPointer;
       }
       onOutput("[Program finished]");
     }
@@ -161,7 +168,7 @@ export function createRunner(
     return {
       start() {
         stopped = false;
-        ip = 0;
+        instructionPointer = 0;
         run();
       },
       stop() {
