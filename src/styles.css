@@ -11,6 +11,15 @@ body {
   flex: 1;
   padding: 10px;
 }
+.editor-wrap {
+  height: 100%;
+  box-sizing: border-box;
+  position: relative;
+  background: #001f4d; /* deep blue */
+  border: 2px solid #000;
+  border-radius: 4px;
+  padding: 10px; /* gap between outer border and inner border */
+}
 .controls-pane {
   width: 220px;
   padding: 10px;
@@ -23,10 +32,38 @@ body {
   height: 100%;
   font-family: monospace;
   font-size: 14px;
+  box-sizing: border-box;
+  padding: 12px;
+  background: transparent;
+  color: #c6c6c6; /* light grey text */
+  border: none;
+  border-radius: 2px;
+  line-height: 1.45;
+  caret-color: #ffffff;
+  resize: none;
 }
 .controls button {
   display: block;
   margin-bottom: 8px;
   padding: 8px 12px;
   font-size: 14px;
+}
+.editor::selection {
+  background: rgba(255, 255, 255, 0.12);
+}
+.editor:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.06);
+}
+
+/* inner grey border inside the blue area, offset from outer border by padding */
+.editor-wrap::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 10px;
+  bottom: 10px;
+  border: 1px solid rgba(200, 200, 200, 0.16);
+  border-radius: 3px;
+  pointer-events: none;
 }
