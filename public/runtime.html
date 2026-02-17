@@ -1,40 +1,130 @@
 <!doctype html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>jBASIC Runtime</title>
-  <style>body{font-family:system-ui,Arial;background:#111;color:#eee;padding:10px}#output{white-space:pre-wrap;font-family:monospace}</style>
-</head>
-<body>
-  <h3>jBASIC Runtime</h3>
-  <div id="output"></div>
-  <script type="module">
-    import { createRunner } from '/src/interpreter/basic.js'
-
-    const outEl = document.getElementById('output')
-    function append(msg){
-      outEl.textContent += msg + '\n'
-    }
-
-    window.addEventListener('message', (ev)=>{
-      const msg = ev.data
-      if(!msg || !msg.type) return
-      if(msg.type === 'run'){
-        outEl.textContent = ''
-        const runner = createRunner(msg.code, (o)=>{
-          append(o)
-          window.opener && window.opener.postMessage({type:'output', payload:o}, '*')
-        })
-        window._jbasic_runner = runner
-        runner.start()
-      } else if(msg.type === 'stop'){
-        if(window._jbasic_runner) window._jbasic_runner.stop()
-        append('[Stopped]')
+  <head>
+    <meta charset="utf-8" />
+    <title>jBASIC Runtime</title>
+    <style>
+      body {
+        font-family: system-ui, Arial;
+        background: #111;
+        color: #eee;
+        padding: 10px;
       }
-    })
+      #output {
+        white-space: pre-wrap;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>jBASIC Runtime</h3>
+    <div id="output"></div>
+    <script type="module">
+      import { createRunner } from "/src/interpreter/basic.js";
 
-    // notify opener we're ready
-    window.opener && window.opener.postMessage({type:'ready'}, '*')
-  </script>
-</body>
+      const outEl = document.getElementById("output");
+      function append(msg) {
+        const line = document.createElement("div");
+        line.textContent = String(msg);
+        outEl.appendChild(line);
+      }
+
+      let pendingInputEl = null;
+      function requestInput(promptText) {
+        return new Promise((resolve) => {
+          const line = document.createElement("div");
+          line.style.fontFamily = "monospace";
+          line.style.display = "flex";
+          line.style.alignItems = "center";
+          const promptSpan = document.createElement("span");
+          if (promptText) promptSpan.textContent = promptText + " ";
+          const inputEl = document.createElement("input");
+          inputEl.type = "text";
+          inputEl.className = "jbasic-runtime-input";
+          inputEl.style.background = "transparent";
+          inputEl.style.color = "inherit";
+          inputEl.style.border = "none";
+          inputEl.style.outline = "none";
+          inputEl.style.font = "inherit";
+          inputEl.style.width = "40%";
+          inputEl.style.caretColor = "white";
+
+          line.appendChild(promptSpan);
+          line.appendChild(inputEl);
+          outEl.appendChild(line);
+          inputEl.focus();
+          pendingInputEl = inputEl;
+
+          function finish(val) {
+            try {
+              inputEl.remove();
+            } catch (e) {}
+            const valSpan = document.createElement("span");
+            valSpan.textContent = String(val == null ? "" : val);
+            promptSpan.appendChild(valSpan);
+            pendingInputEl = null;
+            resolve(val == null ? "" : val);
+          }
+
+          inputEl.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter") {
+              finish(inputEl.value);
+            } else if (ev.key === "Escape") {
+              finish("");
+            }
+          });
+
+          // notify opener (for compatibility), but primary input happens here
+          if (window.opener)
+            window.opener.postMessage(
+              { type: "inputRequest", prompt: promptText },
+              "*",
+            );
+
+          // safety timeout: resolve empty after 2 minutes
+          setTimeout(() => {
+            if (pendingInputEl === inputEl) finish("");
+          }, 120000);
+        });
+      }
+
+      window.addEventListener("message", (ev) => {
+        const msg = ev.data;
+        if (!msg || !msg.type) return;
+        if (msg.type === "run") {
+          outEl.innerHTML = "";
+          const runner = createRunner(
+            msg.code,
+            (o) => {
+              append(o);
+              window.opener &&
+                window.opener.postMessage({ type: "output", payload: o }, "*");
+            },
+            async (promptName) => {
+              // ask opener for input and wait
+              const v = await requestInput(promptName);
+              return v;
+            },
+          );
+          window._jbasic_runner = runner;
+          runner.start();
+        } else if (msg.type === "stop") {
+          if (window._jbasic_runner) window._jbasic_runner.stop();
+          append("[Stopped]");
+        } else if (msg.type === "input") {
+          console.log("runtime <- opener: input", msg.value);
+          if (pendingInputEl) {
+            pendingInputEl.value = msg.value == null ? "" : msg.value;
+            const ev = new KeyboardEvent("keydown", { key: "Enter" });
+            pendingInputEl.dispatchEvent(ev);
+          } else {
+            append(String(msg.value));
+          }
+        }
+      });
+
+      // notify opener we're ready
+      window.opener && window.opener.postMessage({ type: "ready" }, "*");
+    </script>
+  </body>
 </html>
