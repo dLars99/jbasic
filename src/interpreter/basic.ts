@@ -6,6 +6,7 @@ import { handleFor } from "./handlers/for";
 import { handleNext } from "./handlers/next";
 import { handleInput } from "./handlers/input";
 import { handleEnd } from "./handlers/end";
+import { Parser } from "expr-eval";
 
 export type Statement = { lineno: number | null; text: string };
 
@@ -56,46 +57,111 @@ export function createRunner(
   function safeEvalExpr(expr: string) {
     expr = String(expr).trim();
     if (/^".*"$/.test(expr)) return expr.slice(1, -1);
-    // Replace identifiers only outside quoted literals
-    let out = "";
-    let i = 0;
-    while (i < expr.length) {
-      const ch = expr[i];
-      if (ch === '"') {
-        let j = i + 1;
-        while (j < expr.length) {
-          if (expr[j] === '"') {
-            j++;
-            break;
-          }
-          j++;
-        }
-        out += expr.slice(i, j);
-        i = j;
-      } else {
-        let j = i;
-        while (j < expr.length && expr[j] !== '"') j++;
-        const codePart = expr.slice(i, j);
-        const replacedPart = codePart.replace(
-          /[A-Za-z][A-Za-z0-9_]*/g,
-          (name) => {
-            const val = environment[name];
-            if (typeof val === "string")
-              return `"${String(val).replace(/"/g, '\\"')}"`;
-            if (val == null) return "0";
-            return String(val);
-          },
-        );
-        out += replacedPart;
-        i = j;
-      }
-    }
     try {
-      // eslint-disable-next-line no-new-func
-      return Function(`"use strict"; return (${out})`)();
+      const parser = new Parser();
+      // Normalize double-quoted BASIC strings to single-quoted literals for expr-eval
+      // e.g. "Hello" -> 'Hello'
+      let norm = "";
+      let i = 0;
+      while (i < expr.length) {
+        const ch = expr[i];
+        if (ch === '"') {
+          let j = i + 1;
+          let content = "";
+          while (j < expr.length) {
+            if (expr[j] === '"') {
+              j++;
+              break;
+            }
+            const c = expr[j];
+            if (c === "'") content += "\\'";
+            else content += c;
+            j++;
+          }
+          norm += `'${content}'`;
+          i = j;
+        } else {
+          norm += ch;
+          i++;
+        }
+      }
+
+      const parsed = parser.parse(norm);
+
+      // Build variables map from environment, defaulting missing vars to 0
+      const vars: Record<string, any> = Object.create(null);
+      const usedVars = parsed.variables();
+      for (const v of usedVars) {
+        if (Object.prototype.hasOwnProperty.call(environment, v)) {
+          vars[v] = environment[v];
+        } else {
+          vars[v] = 0;
+        }
+      }
+
+      const value = parsed.evaluate(vars);
+
+      // If evaluation produced NaN (commonly when adding strings using '+'),
+      // fall back to BASIC-style concatenation: split on top-level '+' and
+      // concatenate stringified segment values.
+      if (
+        typeof value === "number" &&
+        isNaN(value) &&
+        norm.indexOf("+") !== -1
+      ) {
+        // split on top-level plus signs (not inside quotes or parentheses)
+        const parts: string[] = [];
+        let depth = 0;
+        let inQuote = false;
+        let buffer = "";
+        for (let i = 0; i < norm.length; i++) {
+          const ch = norm[i];
+          if (ch === "'") {
+            inQuote = !inQuote;
+            buffer += ch;
+            continue;
+          }
+          if (!inQuote) {
+            if (ch === "(") {
+              depth++;
+            } else if (ch === ")") {
+              if (depth > 0) depth--;
+            } else if (ch === "+" && depth === 0) {
+              parts.push(buffer);
+              buffer = "";
+              continue;
+            }
+          }
+          buffer += ch;
+        }
+        if (buffer.length) parts.push(buffer);
+
+        const evaluatedParts = parts.map((p) => {
+          const s = p.trim();
+          if (!s) return "";
+          try {
+            const subParsed = parser.parse(s);
+            const subVars: Record<string, any> = Object.create(null);
+            for (const v of subParsed.variables()) {
+              subVars[v] = Object.prototype.hasOwnProperty.call(environment, v)
+                ? environment[v]
+                : 0;
+            }
+            const subVal = subParsed.evaluate(subVars);
+            return subVal == null ? "" : String(subVal);
+          } catch (err) {
+            // As a fallback, remove surrounding quotes if present
+            if (s.startsWith("'") && s.endsWith("'")) return s.slice(1, -1);
+            return s;
+          }
+        });
+        return evaluatedParts.join("");
+      }
+
+      return value;
     } catch (err) {
       try {
-        console.error("safeEvalExpr error", err, "expr:", expr, "eval->", out);
+        console.error("safeEvalExpr error", err, "expr:", expr);
       } catch (_) {}
       return 0;
     }

@@ -35,14 +35,16 @@ export default function App(): JSX.Element {
     );
     runtimeWindowRef.current = runtimeWindow;
     const onReady = (event: MessageEvent) => {
+      // require same-origin ready message from the runtime popup
       if (
+        event.origin === window.location.origin &&
         event.source === runtimeWindow &&
         event.data &&
         event.data.type === "ready"
       ) {
         runtimeWindow!.postMessage(
           { type: "run", code, instructionLimit },
-          "*",
+          window.location.origin,
         );
         window.removeEventListener("message", onReady as EventListener);
       }
@@ -53,7 +55,7 @@ export default function App(): JSX.Element {
   const handleStop = () => {
     const runtimeWindow = runtimeWindowRef.current;
     if (runtimeWindow && !runtimeWindow.closed) {
-      runtimeWindow.postMessage({ type: "stop" }, "*");
+      runtimeWindow.postMessage({ type: "stop" }, window.location.origin);
       runtimeWindow.close();
       runtimeWindowRef.current = null;
     }
@@ -89,7 +91,10 @@ export default function App(): JSX.Element {
   function sendInputResponse(value: string) {
     const targetWindow = runtimeWindowRef.current;
     if (targetWindow && !targetWindow.closed)
-      targetWindow.postMessage({ type: "input", value }, "*");
+      targetWindow.postMessage(
+        { type: "input", value },
+        window.location.origin,
+      );
   }
 
   return (
