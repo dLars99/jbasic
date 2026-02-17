@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>jBASIC Runtime</title>
+  <style>body{font-family:system-ui,Arial;background:#111;color:#eee;padding:10px}#output{white-space:pre-wrap;font-family:monospace}</style>
+</head>
+<body>
+  <h3>jBASIC Runtime</h3>
+  <div id="output"></div>
+  <script type="module">
+    import { createRunner } from '/src/interpreter/basic.js'
+
+    const outEl = document.getElementById('output')
+    function append(msg){
+      outEl.textContent += msg + '\n'
+    }
+
+    window.addEventListener('message', (ev)=>{
+      const msg = ev.data
+      if(!msg || !msg.type) return
+      if(msg.type === 'run'){
+        outEl.textContent = ''
+        const runner = createRunner(msg.code, (o)=>{
+          append(o)
+          window.opener && window.opener.postMessage({type:'output', payload:o}, '*')
+        })
+        window._jbasic_runner = runner
+        runner.start()
+      } else if(msg.type === 'stop'){
+        if(window._jbasic_runner) window._jbasic_runner.stop()
+        append('[Stopped]')
+      }
+    })
+
+    // notify opener we're ready
+    window.opener && window.opener.postMessage({type:'ready'}, '*')
+  </script>
+</body>
+</html>
