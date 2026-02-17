@@ -3,19 +3,18 @@ import Editor from "./components/Editor";
 import Controls from "./components/Controls";
 import { defaultProgram } from "./examples";
 
-export default function App() {
-  const [code, setCode] = useState(() => {
+export default function App(): JSX.Element {
+  const [code, setCode] = useState<string>(() => {
     return localStorage.getItem("jbasic:code") || defaultProgram;
   });
-  const runtimeWindowRef = useRef(null);
-  // runtime now handles INPUT inline; no editor-side prompt required
+  const runtimeWindowRef = useRef<Window | null>(null);
 
   useEffect(() => {
     localStorage.setItem("jbasic:code", code);
   }, [code]);
 
   useEffect(() => {
-    function onMessage(ev) {
+    function onMessage(ev: MessageEvent) {
       const msg = ev.data;
       if (!msg || !msg.type) return;
       if (msg.type === "output") {
@@ -33,13 +32,13 @@ export default function App() {
       "width=600,height=400",
     );
     runtimeWindowRef.current = w;
-    const onReady = (ev) => {
+    const onReady = (ev: MessageEvent) => {
       if (ev.source === w && ev.data && ev.data.type === "ready") {
-        w.postMessage({ type: "run", code }, "*");
-        window.removeEventListener("message", onReady);
+        w!.postMessage({ type: "run", code }, "*");
+        window.removeEventListener("message", onReady as EventListener);
       }
     };
-    window.addEventListener("message", onReady);
+    window.addEventListener("message", onReady as EventListener);
   };
 
   const handleStop = () => {
@@ -51,7 +50,7 @@ export default function App() {
     }
   };
 
-  function sendInputResponse(value) {
+  function sendInputResponse(value: string) {
     const target = runtimeWindowRef.current;
     if (target && !target.closed)
       target.postMessage({ type: "input", value }, "*");

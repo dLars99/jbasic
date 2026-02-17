@@ -1,6 +1,11 @@
 import React from "react";
 
-export default function Controls({ onRun, onStop }) {
+type Props = {
+  onRun: () => void;
+  onStop: () => void;
+};
+
+export default function Controls({ onRun, onStop }: Props): JSX.Element {
   return (
     <div className="controls">
       <button onClick={onRun}>Run</button>

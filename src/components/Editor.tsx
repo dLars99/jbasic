@@ -1,6 +1,11 @@
 import React from "react";
 
-export default function Editor({ value, onChange }) {
+type Props = {
+  value: string;
+  onChange: (v: string) => void;
+};
+
+export default function Editor({ value, onChange }: Props): JSX.Element {
   return (
     <div className="editor-wrap">
       <textarea
