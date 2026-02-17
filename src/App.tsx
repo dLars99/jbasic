@@ -7,6 +7,8 @@ export default function App(): JSX.Element {
   const [code, setCode] = useState<string>(() => {
     return localStorage.getItem("jbasic:code") || defaultProgram;
   });
+  const [instructionLimit, setInstructionLimit] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const runtimeWindowRef = useRef<Window | null>(null);
 
   useEffect(() => {
@@ -38,7 +40,10 @@ export default function App(): JSX.Element {
         event.data &&
         event.data.type === "ready"
       ) {
-        runtimeWindow!.postMessage({ type: "run", code }, "*");
+        runtimeWindow!.postMessage(
+          { type: "run", code, instructionLimit },
+          "*",
+        );
         window.removeEventListener("message", onReady as EventListener);
       }
     };
@@ -54,6 +59,33 @@ export default function App(): JSX.Element {
     }
   };
 
+  const handleSave = () => {
+    const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "program.bas";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleLoadClick = () => {
+    if (!fileInputRef.current) {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".bas,.txt";
+      input.addEventListener("change", async (ev) => {
+        const fi = (ev.target as HTMLInputElement).files;
+        if (!fi || fi.length === 0) return;
+        const file = fi[0];
+        const text = await file.text();
+        setCode(text);
+      });
+      fileInputRef.current = input;
+    }
+    fileInputRef.current.click();
+  };
+
   function sendInputResponse(value: string) {
     const targetWindow = runtimeWindowRef.current;
     if (targetWindow && !targetWindow.closed)
@@ -66,7 +98,14 @@ export default function App(): JSX.Element {
         <Editor value={code} onChange={setCode} />
       </div>
       <div className="controls-pane">
-        <Controls onRun={handleRun} onStop={handleStop} />
+        <Controls
+          onRun={handleRun}
+          onStop={handleStop}
+          onSave={handleSave}
+          onLoadClick={handleLoadClick}
+          instructionLimit={instructionLimit}
+          setInstructionLimit={setInstructionLimit}
+        />
       </div>
     </div>
   );

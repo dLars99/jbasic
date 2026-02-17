@@ -105,6 +105,7 @@
               const v = await requestInput(promptName);
               return v;
             },
+            message.instructionLimit ?? null,
           );
           window._jbasic_runner = runner;
           runner.start();

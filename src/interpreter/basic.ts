@@ -7,11 +7,11 @@ import { handleNext } from "./handlers/next";
 import { handleInput } from "./handlers/input";
 import { handleEnd } from "./handlers/end";
 
-export type Stmt = { lineno: number | null; text: string };
+export type Statement = { lineno: number | null; text: string };
 
 export type RunnerCtx = {
   environment: Record<string, string | number | undefined>;
-  statements: Stmt[];
+  statements: Statement[];
   lineNumberToIndex: Record<number, number>;
   loopStack: Array<{
     name: string;
@@ -19,7 +19,7 @@ export type RunnerCtx = {
     step: number;
     loopInstruction: number;
   }>;
-  onOutput: (s: string) => void;
+  onOutput: (output: string) => void;
   onInput: (prompt: string) => Promise<string>;
   safeEvalExpr: (expr: string) => any;
   instructionPointer: number;
@@ -27,15 +27,16 @@ export type RunnerCtx = {
 
 export function createRunner(
   code: string,
-  onOutput: (s: string) => void = () => {},
+  onOutput: (output: string) => void = () => {},
   onInput: (prompt: string) => Promise<string> = async () => "",
+  instructionLimit: number | null = null,
 ) {
-  const rawLines = code.split(/\r?\n/).map((l) => l.replace(/\r/g, ""));
+  const rawLines = code.split(/\r?\n/).map((raw) => raw.replace(/\r/g, ""));
 
-  const statements: Stmt[] = [];
+  const statements: Statement[] = [];
   const lineNumberToIndex: Record<number, number> = Object.create(null);
-  rawLines.forEach((l) => {
-    const text = l.trim();
+  rawLines.forEach((rawLine) => {
+    const text = rawLine.trim();
     if (!text) return;
     const match = text.match(/^\s*([0-9]+)\s+(.*)$/);
     if (match) {
@@ -78,11 +79,11 @@ export function createRunner(
         const replacedPart = codePart.replace(
           /[A-Za-z][A-Za-z0-9_]*/g,
           (name) => {
-            const v = environment[name];
-            if (typeof v === "string")
-              return `"${String(v).replace(/"/g, '\\"')}"`;
-            if (v == null) return "0";
-            return String(v);
+            const val = environment[name];
+            if (typeof val === "string")
+              return `"${String(val).replace(/"/g, '\\"')}"`;
+            if (val == null) return "0";
+            return String(val);
           },
         );
         out += replacedPart;
@@ -118,12 +119,22 @@ export function createRunner(
 
     async function run() {
       let steps = 0;
+      let executedInstructions = 0;
       while (instructionPointer < statements.length && !stopped) {
         const stmt = statements[instructionPointer].text;
         steps += 1;
+        executedInstructions += 1;
+
+        if (
+          instructionLimit != null &&
+          executedInstructions > instructionLimit
+        ) {
+          onOutput("[Instruction limit reached]");
+          break;
+        }
         if (steps >= maxStepsPerTick) {
           steps = 0;
-          await new Promise((r) => setTimeout(r, 0));
+          await new Promise((resolve) => setTimeout(resolve, 0));
           if (stopped) break;
         }
 

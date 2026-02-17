@@ -2,7 +2,7 @@ import React from "react";
 
 type Props = {
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string) => void;
 };
 
 export default function Editor({ value, onChange }: Props): JSX.Element {

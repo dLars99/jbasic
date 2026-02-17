@@ -48,6 +48,28 @@ body {
   padding: 8px 12px;
   font-size: 14px;
 }
+/* Grouped controls layout */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.controls .button-group {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.controls button {
+  display: inline-block;
+  margin-bottom: 0;
+}
+
+.controls label {
+  margin-left: 8px;
+  font-size: 13px;
+}
 .editor::selection {
   background: rgba(255, 255, 255, 0.12);
 }
