@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import Editor from "./components/Editor";
 import Controls from "./components/Controls";
 import { defaultProgram } from "./examples";
@@ -62,10 +62,10 @@ export default function App(): JSX.Element {
   const handleSave = () => {
     const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "program.bas";
-    a.click();
+    const shadowDownloadLink = document.createElement("a");
+    shadowDownloadLink.href = url;
+    shadowDownloadLink.download = "program.bas";
+    shadowDownloadLink.click();
     URL.revokeObjectURL(url);
   };
 
@@ -75,9 +75,9 @@ export default function App(): JSX.Element {
       input.type = "file";
       input.accept = ".bas,.txt";
       input.addEventListener("change", async (ev) => {
-        const fi = (ev.target as HTMLInputElement).files;
-        if (!fi || fi.length === 0) return;
-        const file = fi[0];
+        const fileList = (ev.target as HTMLInputElement).files;
+        if (!fileList || fileList.length === 0) return;
+        const file = fileList[0];
         const text = await file.text();
         setCode(text);
       });
@@ -86,18 +86,12 @@ export default function App(): JSX.Element {
     fileInputRef.current.click();
   };
 
-  function sendInputResponse(value: string) {
-    const targetWindow = runtimeWindowRef.current;
-    if (targetWindow && !targetWindow.closed)
-      targetWindow.postMessage({ type: "input", value }, "*");
-  }
-
   return (
-    <div className="app">
-      <div className="editor-pane">
+    <main className="app">
+      <section className="editor-pane">
         <Editor value={code} onChange={setCode} />
-      </div>
-      <div className="controls-pane">
+      </section>
+      <aside className="controls-pane">
         <Controls
           onRun={handleRun}
           onStop={handleStop}
@@ -106,7 +100,7 @@ export default function App(): JSX.Element {
           instructionLimit={instructionLimit}
           setInstructionLimit={setInstructionLimit}
         />
-      </div>
-    </div>
+      </aside>
+    </main>
   );
 }

@@ -1,5 +1,5 @@
 body {
-  font-family: system-ui, Arial, sans-serif;
+  font-family: monospace;
   margin: 0;
   height: 100vh;
 }
@@ -43,10 +43,13 @@ body {
   resize: none;
 }
 .controls button {
-  display: block;
+  display: inline-block;
+  cursor: pointer;
+  font-family: monospace;
   margin-bottom: 8px;
   padding: 8px 12px;
   font-size: 14px;
+  width: 60px;
 }
 /* Grouped controls layout */
 .controls {
@@ -59,17 +62,20 @@ body {
 .controls .button-group {
   display: inline-flex;
   gap: 8px;
-}
-
-.controls button {
-  display: inline-block;
-  margin-bottom: 0;
+  margin-bottom: 4px;
 }
 
 .controls label {
-  margin-left: 8px;
   font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
+
+.instruction-limit-input {
+  width: 100px;
+}
+
 .editor::selection {
   background: rgba(255, 255, 255, 0.12);
 }
