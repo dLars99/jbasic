@@ -1,6 +1,6 @@
-import type { RunnerCtx } from "../basic";
+import type { StatementHandler } from "../basic";
 
-export function handleNext(ctx: RunnerCtx, stmt: string) {
+export const handleNext: StatementHandler = function (ctx, stmt) {
   const match = stmt.match(/^NEXT(?:\s+([A-Za-z][A-Za-z0-9_]*))?/i);
   const varName = match && match[1] ? match[1] : null;
   if (ctx.loopStack.length === 0) {
@@ -24,4 +24,4 @@ export function handleNext(ctx: RunnerCtx, stmt: string) {
     ctx.loopStack.pop();
     ctx.instructionPointer += 1;
   }
-}
+};

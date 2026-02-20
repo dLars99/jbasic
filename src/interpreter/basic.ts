@@ -7,23 +7,31 @@ import { handleNext } from "./handlers/next";
 import { handleInput } from "./handlers/input";
 import { handleEnd } from "./handlers/end";
 
+type Environment = Record<string, string | number | undefined>;
 export type Statement = { lineno: number | null; text: string };
+type LineNumberIndexMap = Record<number, number>;
+type StackFrame = {
+  name: string;
+  end: number;
+  step: number;
+  loopInstruction: number;
+};
 
 export type RunnerCtx = {
-  environment: Record<string, string | number | undefined>;
+  environment: Environment;
   statements: Statement[];
-  lineNumberToIndex: Record<number, number>;
-  loopStack: Array<{
-    name: string;
-    end: number;
-    step: number;
-    loopInstruction: number;
-  }>;
+  lineNumberToIndex: LineNumberIndexMap;
+  loopStack: StackFrame[];
   onOutput: (output: string) => void;
   onInput: (prompt: string) => Promise<string>;
   safeEvalExpr: (expr: string) => any;
   instructionPointer: number;
 };
+
+export type StatementHandler<ReturnType = void> = (
+  ctx: RunnerCtx,
+  stmt: string,
+) => ReturnType;
 
 export function createRunner(
   code: string,
@@ -34,11 +42,11 @@ export function createRunner(
   const rawLines = code.split(/\r?\n/).map((raw) => raw.replace(/\r/g, ""));
 
   const statements: Statement[] = [];
-  const lineNumberToIndex: Record<number, number> = Object.create(null);
+  const lineNumberToIndex: LineNumberIndexMap = Object.create(null);
   rawLines.forEach((rawLine) => {
     const text = rawLine.trim();
     if (!text) return;
-    const match = text.match(/^\s*([0-9]+)\s+(.*)$/);
+    const match = text.match(/^\s*([0-9]+)\s+(.*)$/); // Functionalize: get statements
     if (match) {
       const lineno = Number(match[1]);
       const body = match[2].trim();
@@ -49,8 +57,7 @@ export function createRunner(
     }
   });
 
-  const environment: Record<string, string | number | undefined> =
-    Object.create(null);
+  const environment: Environment = Object.create(null);
   let stopped = false;
 
   function safeEvalExpr(expr: string) {
@@ -74,14 +81,15 @@ export function createRunner(
         i = j;
       } else {
         let j = i;
-        while (j < expr.length && expr[j] !== '"') j++;
+        while (j < expr.length && expr[j] !== '"') j++; // Abstract: find next quote index or end of string
         const codePart = expr.slice(i, j);
         const replacedPart = codePart.replace(
+          // replacing codePart to handle variable substitution, only for valid identifiers
           /[A-Za-z][A-Za-z0-9_]*/g,
           (name) => {
             const val = environment[name];
             if (typeof val === "string")
-              return `"${String(val).replace(/"/g, '\\"')}"`;
+              return `"${String(val).replace(/"/g, '\\"')}"`; // Abstract: escape quotes in string values
             if (val == null) return "0";
             return String(val);
           },
@@ -107,6 +115,7 @@ export function createRunner(
     const maxStepsPerTick = 500;
 
     const ctx: RunnerCtx = {
+      // Functionalize: contextBuilder?
       environment,
       statements,
       lineNumberToIndex,
@@ -121,7 +130,7 @@ export function createRunner(
       let steps = 0;
       let executedInstructions = 0;
       while (instructionPointer < statements.length && !stopped) {
-        const stmt = statements[instructionPointer].text;
+        const statement = statements[instructionPointer].text;
         steps += 1;
         executedInstructions += 1;
 
@@ -139,27 +148,27 @@ export function createRunner(
         }
 
         ctx.instructionPointer = instructionPointer;
-        const trimmedStmt = stmt.trim();
+        const trimmedStmt = statement.trim(); // Functionalize: map statement to handler
         try {
           let res: any;
           if (/^PRINT\b/i.test(trimmedStmt)) {
-            res = handlePrint(ctx, stmt);
+            res = handlePrint(ctx, statement);
           } else if (/^LET\b/i.test(trimmedStmt)) {
-            res = handleLet(ctx, stmt);
+            res = handleLet(ctx, statement);
           } else if (/^GOTO\b/i.test(trimmedStmt)) {
-            res = handleGoto(ctx, stmt);
+            res = handleGoto(ctx, statement);
           } else if (/^IF\b/i.test(trimmedStmt)) {
-            res = handleIf(ctx, stmt);
+            res = handleIf(ctx, statement);
           } else if (/^FOR\b/i.test(trimmedStmt)) {
-            res = handleFor(ctx, stmt);
+            res = handleFor(ctx, statement);
           } else if (/^NEXT\b/i.test(trimmedStmt)) {
-            res = handleNext(ctx, stmt);
+            res = handleNext(ctx, statement);
           } else if (/^INPUT\b/i.test(trimmedStmt)) {
-            res = handleInput(ctx, stmt);
+            res = handleInput(ctx, statement);
           } else if (/^END\b/i.test(trimmedStmt)) {
-            res = handleEnd(ctx, stmt);
+            res = handleEnd(ctx, statement);
           } else {
-            onOutput("UNRECOGNIZED: " + stmt);
+            onOutput("UNRECOGNIZED: " + statement);
             ctx.instructionPointer += 1;
           }
 
@@ -177,6 +186,7 @@ export function createRunner(
     }
 
     return {
+      // preassign start and stop for readability?
       start() {
         stopped = false;
         instructionPointer = 0;

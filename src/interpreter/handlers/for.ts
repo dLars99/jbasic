@@ -1,6 +1,6 @@
-import type { RunnerCtx } from "../basic";
+import type { StatementHandler } from "../basic";
 
-export function handleFor(ctx: RunnerCtx, stmt: string) {
+export const handleFor: StatementHandler = function (ctx, stmt) {
   const match = stmt.match(
     /^FOR\s+([A-Za-z][A-Za-z0-9_]*)\s*=\s*(.+?)\s+TO\s+(.+?)(?:\s+STEP\s+(.+))?$/i,
   );
@@ -18,4 +18,4 @@ export function handleFor(ctx: RunnerCtx, stmt: string) {
     });
   }
   ctx.instructionPointer += 1;
-}
+};

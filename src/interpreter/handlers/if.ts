@@ -1,6 +1,6 @@
-import type { RunnerCtx } from "../basic";
+import type { StatementHandler } from "../basic";
 
-export function handleIf(ctx: RunnerCtx, stmt: string) {
+export const handleIf: StatementHandler = function (ctx, stmt) {
   const match = stmt.match(/^IF\s+(.+)\s+THEN\s+(?:GOTO\s+)?([0-9]+)$/i);
   if (match) {
     const [, condition, targetStr] = match;
@@ -16,4 +16,4 @@ export function handleIf(ctx: RunnerCtx, stmt: string) {
   } else {
     ctx.instructionPointer += 1;
   }
-}
+};

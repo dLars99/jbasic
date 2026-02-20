@@ -1,6 +1,9 @@
-import type { RunnerCtx } from "../basic";
+import type { StatementHandler } from "../basic";
 
-export async function handleInput(ctx: RunnerCtx, stmt: string) {
+export const handleInput: StatementHandler<Promise<void>> = async function (
+  ctx,
+  stmt,
+) {
   let name: string | null = null;
   let promptText = "";
   const mQuoted = stmt.match(
@@ -24,4 +27,4 @@ export async function handleInput(ctx: RunnerCtx, stmt: string) {
     }
   }
   ctx.instructionPointer += 1;
-}
+};

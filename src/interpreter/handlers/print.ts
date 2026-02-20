@@ -1,8 +1,8 @@
-import type { RunnerCtx } from "../basic";
+import type { StatementHandler } from "../basic";
 
-export function handlePrint(ctx: RunnerCtx, stmt: string) {
+export const handlePrint: StatementHandler = function (ctx, stmt) {
   const expr = stmt.replace(/^PRINT\b/i, "").trim();
   const out = ctx.safeEvalExpr(expr);
   ctx.onOutput(String(out));
   ctx.instructionPointer += 1;
-}
+};

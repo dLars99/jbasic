@@ -1,5 +1,5 @@
-import type { RunnerCtx } from "../basic";
+import type { StatementHandler } from "../basic";
 
-export function handleEnd(ctx: RunnerCtx, _stmt: string) {
+export const handleEnd: StatementHandler = function (ctx, _stmt) {
   ctx.instructionPointer = ctx.statements.length;
-}
+};
