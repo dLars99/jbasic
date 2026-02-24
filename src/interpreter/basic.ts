@@ -6,6 +6,7 @@ import { handleFor } from "./handlers/for";
 import { handleNext } from "./handlers/next";
 import { handleInput } from "./handlers/input";
 import { handleEnd } from "./handlers/end";
+import { getExpressionBetweenQuotes, parseVariables } from "./utils";
 
 type Environment = Record<string, string | number | undefined>;
 export type Statement = { lineno: number | null; text: string };
@@ -69,33 +70,13 @@ export function createRunner(
     while (i < expr.length) {
       const ch = expr[i];
       if (ch === '"') {
-        let j = i + 1;
-        while (j < expr.length) {
-          if (expr[j] === '"') {
-            j++;
-            break;
-          }
-          j++;
-        }
-        out += expr.slice(i, j);
-        i = j;
+        const { foundExp, nextIndex } = getExpressionBetweenQuotes(expr, i);
+        out += foundExp;
+        i = nextIndex;
       } else {
-        let j = i;
-        while (j < expr.length && expr[j] !== '"') j++; // Abstract: find next quote index or end of string
-        const codePart = expr.slice(i, j);
-        const replacedPart = codePart.replace(
-          // replacing codePart to handle variable substitution, only for valid identifiers
-          /[A-Za-z][A-Za-z0-9_]*/g,
-          (name) => {
-            const val = environment[name];
-            if (typeof val === "string")
-              return `"${String(val).replace(/"/g, '\\"')}"`; // Abstract: escape quotes in string values
-            if (val == null) return "0";
-            return String(val);
-          },
-        );
-        out += replacedPart;
-        i = j;
+        const { parsed, nextIndex } = parseVariables(expr, i, environment);
+        out += parsed;
+        i = nextIndex;
       }
     }
     try {
@@ -185,16 +166,16 @@ export function createRunner(
       onOutput("[Program finished]");
     }
 
-    return {
-      // preassign start and stop for readability?
-      start() {
-        stopped = false;
-        instructionPointer = 0;
-        run();
-      },
-      stop() {
-        stopped = true;
-      },
+    const start = () => {
+      stopped = false;
+      instructionPointer = 0;
+      run();
     };
+
+    const stop = () => {
+      stopped = true;
+    };
+
+    return { start, stop };
   })();
 }
