@@ -32,15 +32,12 @@ export const parseVariables = (
 ): { parsed: string; nextIndex: number } => {
   const endIndex = goToNextQuoteIndex(expr, startIndex);
   const codePart = expr.slice(startIndex, endIndex);
-  const parsed = codePart.replace(
-    // replacing codePart to handle variable substitution, only for valid identifiers
-    /[A-Za-z][A-Za-z0-9_]*/g,
-    (name) => {
-      const val = environment[name];
-      if (typeof val === "string") return escapeQuotes(val);
-      if (val == null) return "0";
-      return String(val);
-    },
-  );
+  // replace codePart to handle variable substitution, only for valid identifiers
+  const parsed = codePart.replace(/[A-Za-z][A-Za-z0-9_]*/g, (name) => {
+    const val = environment[name];
+    if (typeof val === "string") return escapeQuotes(val);
+    if (val == null) return "0";
+    return String(val);
+  });
   return { parsed, nextIndex: endIndex };
 };

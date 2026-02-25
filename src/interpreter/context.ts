@@ -15,7 +15,7 @@ export interface RunnerCtx {
   loopStack: StackFrame[];
   readonly onOutput: (output: string) => void;
   readonly onInput: (prompt: string) => Promise<string>;
-  readonly safeEvalExpr: (expr: string, ctx: RunnerCtx) => any;
+  readonly safeEvalExpr: (expr: string, environment: Environment) => any;
   instructionPointer: number;
 }
 
@@ -27,7 +27,7 @@ export class RunnerContext implements RunnerCtx {
   loopStack: StackFrame[];
   readonly onOutput: (output: string) => void;
   readonly onInput: (prompt: string) => Promise<string>;
-  readonly safeEvalExpr: (expr: string, ctx: RunnerCtx) => any;
+  readonly safeEvalExpr: (expr: string, environment: Environment) => any;
   instructionPointer: number;
 
   constructor(
@@ -35,7 +35,7 @@ export class RunnerContext implements RunnerCtx {
     lineNumberToIndex: LineNumberIndexMap,
     onOutput: (output: string) => void,
     onInput: (prompt: string) => Promise<string>,
-    safeEvalExpr: (expr: string, ctx: RunnerCtx) => any,
+    safeEvalExpr: (expr: string, environment: Environment) => any,
   ) {
     this.environment = Object.create(null);
     this.statements = statements;

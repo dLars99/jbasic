@@ -6,28 +6,11 @@ import { handleFor } from "./handlers/for";
 import { handleNext } from "./handlers/next";
 import { handleInput } from "./handlers/input";
 import { handleEnd } from "./handlers/end";
-import { getExpressionBetweenQuotes, parseVariables } from "./utils";
+import { RunnerCtx } from "./context";
+import { getStatementsWithLineNumbers } from "./utils/getStatementsWithLineNumbers";
+import { safeEvalExpr } from "./utils/safeEvalExpr";
 
-type Environment = Record<string, string | number | undefined>;
-export type Statement = { lineno: number | null; text: string };
-type LineNumberIndexMap = Record<number, number>;
-type StackFrame = {
-  name: string;
-  end: number;
-  step: number;
-  loopInstruction: number;
-};
-
-export type RunnerCtx = {
-  environment: Environment;
-  statements: Statement[];
-  lineNumberToIndex: LineNumberIndexMap;
-  loopStack: StackFrame[];
-  onOutput: (output: string) => void;
-  onInput: (prompt: string) => Promise<string>;
-  safeEvalExpr: (expr: string) => any;
-  instructionPointer: number;
-};
+export type Environment = Record<string, string | number | undefined>;
 
 export type StatementHandler<ReturnType = void> = (
   ctx: RunnerCtx,
@@ -40,55 +23,9 @@ export function createRunner(
   onInput: (prompt: string) => Promise<string> = async () => "",
   instructionLimit: number | null = null,
 ) {
-  const rawLines = code.split(/\r?\n/).map((raw) => raw.replace(/\r/g, ""));
-
-  const statements: Statement[] = [];
-  const lineNumberToIndex: LineNumberIndexMap = Object.create(null);
-  rawLines.forEach((rawLine) => {
-    const text = rawLine.trim();
-    if (!text) return;
-    const match = text.match(/^\s*([0-9]+)\s+(.*)$/); // Functionalize: get statements
-    if (match) {
-      const lineno = Number(match[1]);
-      const body = match[2].trim();
-      lineNumberToIndex[lineno] = statements.length;
-      statements.push({ lineno, text: body });
-    } else {
-      statements.push({ lineno: null, text });
-    }
-  });
-
+  const { statements, lineNumberToIndex } = getStatementsWithLineNumbers(code);
   const environment: Environment = Object.create(null);
   let stopped = false;
-
-  function safeEvalExpr(expr: string) {
-    expr = String(expr).trim();
-    if (/^".*"$/.test(expr)) return expr.slice(1, -1);
-    // Replace identifiers only outside quoted literals
-    let out = "";
-    let i = 0;
-    while (i < expr.length) {
-      const ch = expr[i];
-      if (ch === '"') {
-        const { foundExp, nextIndex } = getExpressionBetweenQuotes(expr, i);
-        out += foundExp;
-        i = nextIndex;
-      } else {
-        const { parsed, nextIndex } = parseVariables(expr, i, environment);
-        out += parsed;
-        i = nextIndex;
-      }
-    }
-    try {
-      // eslint-disable-next-line no-new-func
-      return Function(`"use strict"; return (${out})`)();
-    } catch (err) {
-      try {
-        console.error("safeEvalExpr error", err, "expr:", expr, "eval->", out);
-      } catch (_) {}
-      return 0;
-    }
-  }
 
   return (function runnerFactory() {
     let instructionPointer = 0;

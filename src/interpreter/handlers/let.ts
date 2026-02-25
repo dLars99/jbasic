@@ -5,7 +5,7 @@ export const handleLet: StatementHandler = function (ctx, stmt) {
   const match = rhs.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*(.+)$/);
   if (match) {
     const [, name, expr] = match;
-    ctx.environment[name] = ctx.safeEvalExpr(expr);
+    ctx.environment[name] = ctx.safeEvalExpr(expr, ctx.environment);
   }
   ctx.instructionPointer += 1;
 };
