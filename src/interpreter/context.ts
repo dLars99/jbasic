@@ -1,3 +1,6 @@
+import { getStatementsWithLineNumbers } from "./utils/getStatementsWithLineNumbers";
+import { safeEvalExpr } from "./utils/safeEvalExpr";
+
 export type Environment = Record<string, string | number | undefined>;
 export type Statement = { lineno: number | null; text: string };
 export type LineNumberIndexMap = Record<number, number>;
@@ -8,42 +11,31 @@ export type StackFrame = {
   loopInstruction: number;
 };
 
-export interface RunnerCtx {
+export class RunnerCtx {
   environment: Environment;
-  statements: Statement[];
-  lineNumberToIndex: LineNumberIndexMap;
+  instructionPointer: number;
   loopStack: StackFrame[];
+  readonly lineNumberToIndex: LineNumberIndexMap;
+  readonly statements: Statement[];
   readonly onOutput: (output: string) => void;
   readonly onInput: (prompt: string) => Promise<string>;
-  readonly safeEvalExpr: (expr: string, environment: Environment) => any;
-  instructionPointer: number;
-}
-
-// create class RunnerCtx to hold the execution context, including environment, statements, line number index map, loop stack, and utility functions
-export class RunnerContext implements RunnerCtx {
-  environment: Environment;
-  statements: Statement[];
-  lineNumberToIndex: LineNumberIndexMap;
-  loopStack: StackFrame[];
-  readonly onOutput: (output: string) => void;
-  readonly onInput: (prompt: string) => Promise<string>;
-  readonly safeEvalExpr: (expr: string, environment: Environment) => any;
-  instructionPointer: number;
+  readonly evaluateExpression: (expr: string) => any;
 
   constructor(
-    statements: Statement[],
-    lineNumberToIndex: LineNumberIndexMap,
+    code: string,
     onOutput: (output: string) => void,
     onInput: (prompt: string) => Promise<string>,
-    safeEvalExpr: (expr: string, environment: Environment) => any,
   ) {
+    const { statements, lineNumberToIndex } =
+      getStatementsWithLineNumbers(code);
     this.environment = Object.create(null);
-    this.statements = statements;
+    this.instructionPointer = 0;
     this.lineNumberToIndex = lineNumberToIndex;
     this.loopStack = [];
+    this.statements = statements;
     this.onOutput = onOutput;
     this.onInput = onInput;
-    this.safeEvalExpr = safeEvalExpr;
-    this.instructionPointer = 0;
+    this.evaluateExpression = (expr: string) =>
+      safeEvalExpr(expr, this.environment);
   }
 }

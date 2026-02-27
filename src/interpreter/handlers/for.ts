@@ -6,9 +6,9 @@ export const handleFor: StatementHandler = function (ctx, stmt) {
   );
   if (match) {
     const [, name, startExpr, endExpr, stepExpr] = match;
-    const start = ctx.safeEvalExpr(startExpr, ctx.environment);
-    const end = ctx.safeEvalExpr(endExpr, ctx.environment);
-    const step = stepExpr ? ctx.safeEvalExpr(stepExpr, ctx.environment) : 1;
+    const start = ctx.evaluateExpression(startExpr);
+    const end = ctx.evaluateExpression(endExpr);
+    const step = stepExpr ? ctx.evaluateExpression(stepExpr) : 1;
     ctx.environment[name] = start;
     ctx.loopStack.push({
       name,

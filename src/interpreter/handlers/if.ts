@@ -4,7 +4,7 @@ export const handleIf: StatementHandler = function (ctx, stmt) {
   const match = stmt.match(/^IF\s+(.+)\s+THEN\s+(?:GOTO\s+)?([0-9]+)$/i);
   if (match) {
     const [, condition, targetStr] = match;
-    const cond = ctx.safeEvalExpr(condition, ctx.environment);
+    const cond = ctx.evaluateExpression(condition);
     if (cond) {
       const targetLineNumber = Number(targetStr);
       if (ctx.lineNumberToIndex[targetLineNumber] != null)
