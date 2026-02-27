@@ -1,12 +1,12 @@
-import React from "react";
+import { InstructionLimit } from "./InstructionLimit";
 
-type Props = {
+type ControlsProps = {
   onRun: () => void;
   onStop: () => void;
   onSave: () => void;
   onLoadClick: () => void;
   instructionLimit: number | null;
-  setInstructionLimit: (n: number | null) => void;
+  setInstructionLimit: (newLimit: number | null) => void;
 };
 
 export default function Controls({
@@ -16,7 +16,7 @@ export default function Controls({
   onLoadClick,
   instructionLimit,
   setInstructionLimit,
-}: Props): JSX.Element {
+}: ControlsProps): JSX.Element {
   return (
     <div className="controls">
       <div className="button-group">
@@ -29,20 +29,10 @@ export default function Controls({
         <button onClick={onLoadClick}>Load</button>
       </div>
 
-      <label>
-        Instruction limit:
-        <input
-          type="number"
-          value={instructionLimit == null ? "" : instructionLimit}
-          onChange={(e) => {
-            const v = e.target.value;
-            const num = v === "" ? null : Number(v);
-            setInstructionLimit(num);
-          }}
-          placeholder="unlimited"
-          style={{ width: 100, marginLeft: 6 }}
-        />
-      </label>
+      <InstructionLimit
+        instructionLimit={instructionLimit}
+        setInstructionLimit={setInstructionLimit}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import type { RunnerCtx } from "../basic";
+import type { StatementHandler } from "../basic";
 
-export function handleGoto(ctx: RunnerCtx, stmt: string) {
+export const handleGoto: StatementHandler = function (ctx, stmt) {
   const rest = stmt.replace(/^GOTO\b/i, "").trim();
   const target = Number(rest) || null;
   if (target != null && ctx.lineNumberToIndex[target] != null) {
@@ -8,4 +8,4 @@ export function handleGoto(ctx: RunnerCtx, stmt: string) {
   } else {
     ctx.instructionPointer = ctx.statements.length;
   }
-}
+};
