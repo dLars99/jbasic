@@ -18,21 +18,41 @@ export default function Controls({
   setInstructionLimit,
 }: ControlsProps): JSX.Element {
   return (
-    <div className="controls">
-      <div className="button-group">
-        <button onClick={onRun}>Run</button>
-        <button onClick={onStop}>Stop</button>
-      </div>
+    <div aria-labelledby="controls-heading" className="controls">
+      <h3 id="controls-heading">Controls</h3>
 
-      <div className="button-group">
-        <button onClick={onSave}>Save</button>
-        <button onClick={onLoadClick}>Load</button>
+      <div aria-labelledby="execution-heading" className="execution-controls">
+        <h4 className="inset-heading" id="execution-heading">
+          Execution
+        </h4>
+
+        <button className="run" onClick={onRun} type="button">
+          Run
+        </button>
+
+        <button className="stop" onClick={onStop} type="button">
+          Stop
+        </button>
       </div>
 
       <InstructionLimit
         instructionLimit={instructionLimit}
         setInstructionLimit={setInstructionLimit}
       />
+
+      <div className="button-group">
+        <button className="secondary-button" onClick={onSave} type="button">
+          Save
+        </button>
+
+        <button
+          className="secondary-button"
+          onClick={onLoadClick}
+          type="button"
+        >
+          Load
+        </button>
+      </div>
     </div>
   );
 }
