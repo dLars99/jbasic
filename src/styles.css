@@ -2,8 +2,13 @@
   box-sizing: border-box;
 }
 
+:root {
+  --separator-color: #40657C;
+}
+
 body {
   font-family: monospace;
+  background-color: #A2BFCF;
   margin: 0;
   height: 100vh;
 }
@@ -22,16 +27,17 @@ body {
   height: 100%;
   box-sizing: border-box;
   position: relative;
-  background: #001f4d; /* deep blue */
+  background: #001f4d;
   border: 2px solid #000;
   border-radius: 4px;
-  padding: 10px; /* gap between outer border and inner border */
+  padding: 10px;
 }
 
 .controls-pane {
   width: 220px;
   padding: 10px;
-  border-left: 1px solid #ddd;
+  background-color: #A2BFCF;
+  border-left: 1px solid var(--separator-color);
   display: flex;
   align-items: flex-start;
 }
@@ -44,7 +50,7 @@ body {
   box-sizing: border-box;
   padding: 12px;
   background: transparent;
-  color: #c6c6c6; /* light grey text */
+  color: #c6c6c6;
   border: none;
   border-radius: 2px;
   line-height: 1.45;
@@ -53,7 +59,10 @@ body {
 }
 
 .controls button {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   cursor: pointer;
   font-family: monospace;
   padding: 8px 12px;
@@ -61,6 +70,17 @@ body {
   width: 100%;
   border: 1px solid black;
   border-radius: 4px;
+}
+
+.controls button .button-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 50px;
+}
+
+.controls button .icon {
+  color: rgba(0, 0, 0, 0.26);
 }
 
 .controls .run {
@@ -90,7 +110,7 @@ body {
 .controls .execution-controls {
   display: flex;
   flex-direction: column;
-  border: 1px solid #ddd;
+  border: 1px solid var(--separator-color);
   padding: 10px;
   align-items: center;
   gap: 6px;
@@ -128,7 +148,7 @@ body {
 }
 
 .instruction-limit {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--separator-color);
   width: 100%;
   padding-top: 4px;
   padding-bottom: 16px;
@@ -153,6 +173,7 @@ body {
 .editor::selection {
   background: rgba(255, 255, 255, 0.12);
 }
+
 .editor:focus {
   outline: 2px solid rgba(255, 255, 255, 0.06);
 }

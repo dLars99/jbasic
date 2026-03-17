@@ -1,4 +1,7 @@
+import { FaFolderOpen, FaPlay, FaSave, FaStop } from "react-icons/fa";
 import { InstructionLimit } from "./InstructionLimit";
+import { Button } from "./Button";
+
 
 type ControlsProps = {
   onRun: () => void;
@@ -26,13 +29,13 @@ export default function Controls({
           Execution
         </h4>
 
-        <button className="run" onClick={onRun} type="button">
+        <Button className="run" icon={FaPlay} onClick={onRun} type="button">
           Run
-        </button>
+        </Button>
 
-        <button className="stop" onClick={onStop} type="button">
+        <Button className="stop" icon={FaStop} onClick={onStop} type="button">
           Stop
-        </button>
+        </Button>
       </div>
 
       <InstructionLimit
@@ -41,17 +44,13 @@ export default function Controls({
       />
 
       <div className="button-group">
-        <button className="secondary-button" onClick={onSave} type="button">
+        <Button className="secondary-button" icon={FaSave} onClick={onSave} type="button">
           Save
-        </button>
+        </Button>
 
-        <button
-          className="secondary-button"
-          onClick={onLoadClick}
-          type="button"
-        >
+        <Button className="secondary-button" icon={FaFolderOpen} onClick={onLoadClick} type="button">
           Load
-        </button>
+        </Button>
       </div>
     </div>
   );
