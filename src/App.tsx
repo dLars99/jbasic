@@ -34,7 +34,7 @@ export default function App(): JSX.Element {
       "width=600,height=400",
     );
     runtimeWindowRef.current = runtimeWindow;
-    const onReady = (event: MessageEvent) => {
+    const onReady: EventListener = (event: MessageEvent) => {
       if (
         event.source === runtimeWindow &&
         event.data &&
@@ -44,10 +44,10 @@ export default function App(): JSX.Element {
           { type: "run", code, instructionLimit },
           "*",
         );
-        window.removeEventListener("message", onReady as EventListener);
+        window.removeEventListener("message", onReady);
       }
     };
-    window.addEventListener("message", onReady as EventListener);
+    window.addEventListener("message", onReady);
   };
 
   const handleStop = () => {
