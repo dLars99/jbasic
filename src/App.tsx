@@ -29,7 +29,7 @@ export default function App(): JSX.Element {
 
   const handleRun = () => {
     const runtimeWindow = window.open(
-      "/runtime.html",
+      "/runtime",
       "jbasic-runtime",
       "width=600,height=400",
     );

@@ -209,3 +209,35 @@ body {
   border-radius: 3px;
   pointer-events: none;
 }
+
+.runtime-page {
+  font-family: monospace;
+  background: #111;
+  color: #eee;
+  min-height: 100vh;
+  padding: 10px;
+}
+
+.runtime-heading {
+  margin: 0 0 10px;
+}
+
+.runtime-output {
+  white-space: pre-wrap;
+}
+
+.runtime-input-row {
+  display: flex;
+  align-items: center;
+  font-family: monospace;
+}
+
+.runtime-input {
+  background: transparent;
+  color: inherit;
+  border: none;
+  outline: none;
+  font: inherit;
+  width: 40%;
+  caret-color: white;
+}
