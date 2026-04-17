@@ -11,7 +11,12 @@ const isWordBoundary = (char: string | undefined): boolean => {
   return char === undefined || /[^A-Za-z0-9_]/.test(char);
 };
 
-const normalizeExpression = (expr: string): string => {
+// Normalizes BASIC-style expressions to JavaScript-compatible syntax.
+// Handles BASIC operators: <> -> !=, = -> == (in comparisons), AND -> &&, OR -> ||, NOT -> !
+// Converts TRUE/FALSE to true/false.
+// Preserves string literals (content within quotes).
+// Ensures word boundaries for keywords to avoid false matches in identifiers.
+export const normalizeExpression = (expr: string): string => {
   let output = "";
   let i = 0;
   let inString = false;
@@ -106,15 +111,15 @@ const toBoolean = (value: unknown): boolean => {
   return Boolean(value);
 };
 
-const evaluateAstNode = (
+const evaluateExpressionTreeNode = (
   node: JsepExpression,
   environment: Environment,
 ): unknown => {
   switch (node.type) {
     case "BinaryExpression": {
       const binary = node as JsepBinaryExpression;
-      const left = evaluateAstNode(binary.left, environment);
-      const right = evaluateAstNode(binary.right, environment);
+      const left = evaluateExpressionTreeNode(binary.left, environment);
+      const right = evaluateExpressionTreeNode(binary.right, environment);
       switch (binary.operator) {
         case "+":
           return typeof left === "string" || typeof right === "string"
@@ -129,47 +134,50 @@ const evaluateAstNode = (
         case "%":
           return toNumber(left) % toNumber(right);
         case "<":
-          return toNumber(left) < toNumber(right);
+          return toNumber(left) < toNumber(right) ? 1 : 0;
         case "<=":
-          return toNumber(left) <= toNumber(right);
+          return toNumber(left) <= toNumber(right) ? 1 : 0;
         case ">":
-          return toNumber(left) > toNumber(right);
+          return toNumber(left) > toNumber(right) ? 1 : 0;
         case ">=":
-          return toNumber(left) >= toNumber(right);
+          return toNumber(left) >= toNumber(right) ? 1 : 0;
         case "==":
           if (typeof left === "string" || typeof right === "string") {
-            return String(left) === String(right);
+            return String(left) === String(right) ? 1 : 0;
           }
-          return toNumber(left) === toNumber(right);
+          return toNumber(left) === toNumber(right) ? 1 : 0;
         case "!=":
           if (typeof left === "string" || typeof right === "string") {
-            return String(left) !== String(right);
+            return String(left) !== String(right) ? 1 : 0;
           }
-          return toNumber(left) !== toNumber(right);
+          return toNumber(left) !== toNumber(right) ? 1 : 0;
         case "&&":
-          return toBoolean(left) ? right : left;
+          return toBoolean(left) && toBoolean(right) ? 1 : 0;
         case "||":
-          return toBoolean(left) ? left : right;
+          return toBoolean(left) || toBoolean(right) ? 1 : 0;
         default:
           throw new Error(`Unsupported operator: ${node.operator}`);
       }
     }
     case "UnaryExpression": {
       const unary = node as JsepUnaryExpression;
-      const value = evaluateAstNode(unary.argument, environment);
+      const value = evaluateExpressionTreeNode(unary.argument, environment);
       switch (unary.operator) {
         case "-":
           return -toNumber(value);
         case "+":
           return toNumber(value);
         case "!":
-          return !toBoolean(value);
+          return !toBoolean(value) ? 1 : 0;
         default:
           throw new Error(`Unsupported unary operator: ${node.operator}`);
       }
     }
     case "Literal": {
       const literal = node as JsepLiteral;
+      if (typeof literal.value === "boolean") {
+        return literal.value ? 1 : 0;
+      }
       return literal.value;
     }
     case "Identifier": {
@@ -188,8 +196,22 @@ export function safeEvalExpr(expr: string, environment: Environment) {
 
   try {
     const expressionTreeRoot = jsep(normalizedExpr);
-    return evaluateAstNode(expressionTreeRoot, environment);
+    // Explicit AST acceptance: only allow safe node types to prevent execution of unsupported expressions
+    if (
+      ![
+        "BinaryExpression",
+        "UnaryExpression",
+        "Literal",
+        "Identifier",
+      ].includes(expressionTreeRoot.type)
+    ) {
+      return 0;
+    }
+    return evaluateExpressionTreeNode(expressionTreeRoot, environment);
   } catch (err) {
+    // Parse/eval failures are intentionally converted to 0 as a safe runtime fallback for the interpreter.
+    // This prevents crashes from invalid expressions while maintaining BASIC's permissive evaluation semantics.
+    // Optional debug-only logging is available below for development.
     try {
       console.error(
         "safeEvalExpr error",
