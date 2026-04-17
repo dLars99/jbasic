@@ -6,6 +6,7 @@ import {
   MAX_INSTRUCTION_LIMIT,
   MIN_INSTRUCTION_LIMIT,
 } from "../interpreter/basic";
+import { isOpenerToRuntimeMessage } from "./messages";
 
 type Runner = {
   start: () => void;
@@ -40,23 +41,6 @@ export const useRuntime = () => {
 
   useEffect(() => {
     const trustedOrigin = window.location.origin;
-
-    type IncomingRuntimeMessage =
-      | { type: "run"; code: string; instructionLimit?: number }
-      | { type: "stop" }
-      | { type: "input"; value: unknown };
-
-    const isIncomingRuntimeMessage = (
-      value: unknown,
-    ): value is IncomingRuntimeMessage => {
-      if (!value || typeof value !== "object") return false;
-      const data = value as Record<string, unknown>;
-      if (typeof data.type !== "string") return false;
-      if (data.type === "run") return typeof data.code === "string";
-      if (data.type === "stop") return true;
-      if (data.type === "input") return true;
-      return false;
-    };
 
     const normalizeLimit = (candidate: unknown): number => {
       if (typeof candidate !== "number" || !Number.isFinite(candidate)) {
@@ -103,7 +87,7 @@ export const useRuntime = () => {
       if (event.origin !== trustedOrigin) return;
 
       const message = event.data;
-      if (!isIncomingRuntimeMessage(message)) return;
+      if (!isOpenerToRuntimeMessage(message)) return;
 
       if (message.type === "run") {
         setLines([]);

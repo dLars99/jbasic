@@ -3,21 +3,7 @@ import Editor from "./components/Editor";
 import Controls from "./components/Controls";
 import { defaultProgram } from "./examples";
 import { DEFAULT_INSTRUCTION_LIMIT } from "./interpreter/basic";
-
-type RuntimeMessage =
-  | { type: "ready" }
-  | { type: "output"; payload: string }
-  | { type: "inputRequest"; prompt: string };
-
-const isRuntimeMessage = (value: unknown): value is RuntimeMessage => {
-  if (!value || typeof value !== "object") return false;
-  const data = value as Record<string, unknown>;
-  if (typeof data.type !== "string") return false;
-  if (data.type === "ready") return true;
-  if (data.type === "output") return typeof data.payload === "string";
-  if (data.type === "inputRequest") return typeof data.prompt === "string";
-  return false;
-};
+import { isRuntimeToOpenerMessage } from "./runtime/messages";
 
 export default function App(): JSX.Element {
   const [code, setCode] = useState<string>(() => {
@@ -39,7 +25,7 @@ export default function App(): JSX.Element {
       if (event.source !== runtimeWindowRef.current) return;
       if (event.origin !== runtimeOriginRef.current) return;
       const message = event.data;
-      if (!isRuntimeMessage(message)) return;
+      if (!isRuntimeToOpenerMessage(message)) return;
       if (message.type === "output") {
         console.log("Runtime:", message.payload);
       }
@@ -63,7 +49,7 @@ export default function App(): JSX.Element {
       if (
         event.source === runtimeWindow &&
         event.origin === runtimeOrigin &&
-        isRuntimeMessage(message) &&
+        isRuntimeToOpenerMessage(message) &&
         message.type === "ready"
       ) {
         runtimeWindow!.postMessage(
