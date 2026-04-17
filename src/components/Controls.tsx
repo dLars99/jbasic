@@ -2,14 +2,13 @@ import { FaFolderOpen, FaPlay, FaSave, FaStop } from "react-icons/fa";
 import { InstructionLimit } from "./InstructionLimit";
 import { Button } from "./Button";
 
-
 type ControlsProps = {
   onRun: () => void;
   onStop: () => void;
   onSave: () => void;
   onLoadClick: () => void;
-  instructionLimit: number | null;
-  setInstructionLimit: (newLimit: number | null) => void;
+  instructionLimit: number;
+  setInstructionLimit: (newLimit: number) => void;
 };
 
 export default function Controls({
@@ -44,11 +43,21 @@ export default function Controls({
       />
 
       <div className="button-group">
-        <Button className="secondary-button" icon={FaSave} onClick={onSave} type="button">
+        <Button
+          className="secondary-button"
+          icon={FaSave}
+          onClick={onSave}
+          type="button"
+        >
           Save
         </Button>
 
-        <Button className="secondary-button" icon={FaFolderOpen} onClick={onLoadClick} type="button">
+        <Button
+          className="secondary-button"
+          icon={FaFolderOpen}
+          onClick={onLoadClick}
+          type="button"
+        >
           Load
         </Button>
       </div>

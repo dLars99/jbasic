@@ -4,11 +4,13 @@ import { safeEvalExpr } from "./utils/safeEvalExpr";
 export type Environment = Record<string, string | number | undefined>;
 export type Statement = { lineno: number | null; text: string };
 export type LineNumberIndexMap = Record<number, number>;
+export const LOOP_ITERATION_LIMIT = 100000;
 export type StackFrame = {
   name: string;
   end: number;
   step: number;
   loopInstruction: number;
+  iterations: number;
 };
 
 export class RunnerCtx {
