@@ -129,8 +129,10 @@ const evaluateExpressionTreeNode = (
           return toNumber(left) - toNumber(right);
         case "*":
           return toNumber(left) * toNumber(right);
-        case "/":
-          return toNumber(left) / toNumber(right);
+        case "/": {
+          const divisor = toNumber(right);
+          return divisor === 0 ? 0 : toNumber(left) / divisor;
+        }
         case "%":
           return toNumber(left) % toNumber(right);
         case "<":
