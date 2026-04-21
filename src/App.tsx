@@ -2,14 +2,19 @@ import { useState, useRef, useEffect } from "react";
 import Editor from "./components/Editor";
 import Controls from "./components/Controls";
 import { defaultProgram } from "./examples";
+import { DEFAULT_INSTRUCTION_LIMIT } from "./interpreter/basic";
+import { isRuntimeToOpenerMessage } from "./runtime/messages";
 
 export default function App(): JSX.Element {
   const [code, setCode] = useState<string>(() => {
     return localStorage.getItem("jbasic:code") || defaultProgram;
   });
-  const [instructionLimit, setInstructionLimit] = useState<number | null>(null);
+  const [instructionLimit, setInstructionLimit] = useState<number>(
+    DEFAULT_INSTRUCTION_LIMIT,
+  );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const runtimeWindowRef = useRef<Window | null>(null);
+  const runtimeOriginRef = useRef<string>(window.location.origin);
 
   useEffect(() => {
     localStorage.setItem("jbasic:code", code);
@@ -17,8 +22,10 @@ export default function App(): JSX.Element {
 
   useEffect(() => {
     function onMessage(event: MessageEvent) {
+      if (event.source !== runtimeWindowRef.current) return;
+      if (event.origin !== runtimeOriginRef.current) return;
       const message = event.data;
-      if (!message || !message.type) return;
+      if (!isRuntimeToOpenerMessage(message)) return;
       if (message.type === "output") {
         console.log("Runtime:", message.payload);
       }
@@ -28,21 +35,26 @@ export default function App(): JSX.Element {
   }, []);
 
   const handleRun = () => {
+    const runtimeOrigin = new URL("/runtime", window.location.href).origin;
     const runtimeWindow = window.open(
       "/runtime",
       "jbasic-runtime",
       "width=600,height=400",
     );
+    if (!runtimeWindow) return;
     runtimeWindowRef.current = runtimeWindow;
+    runtimeOriginRef.current = runtimeOrigin;
     const onReady: EventListener = (event: MessageEvent) => {
+      const message = event.data;
       if (
         event.source === runtimeWindow &&
-        event.data &&
-        event.data.type === "ready"
+        event.origin === runtimeOrigin &&
+        isRuntimeToOpenerMessage(message) &&
+        message.type === "ready"
       ) {
         runtimeWindow!.postMessage(
           { type: "run", code, instructionLimit },
-          "*",
+          runtimeOrigin,
         );
         window.removeEventListener("message", onReady);
       }
@@ -53,7 +65,7 @@ export default function App(): JSX.Element {
   const handleStop = () => {
     const runtimeWindow = runtimeWindowRef.current;
     if (runtimeWindow && !runtimeWindow.closed) {
-      runtimeWindow.postMessage({ type: "stop" }, "*");
+      runtimeWindow.postMessage({ type: "stop" }, runtimeOriginRef.current);
       runtimeWindow.close();
       runtimeWindowRef.current = null;
     }

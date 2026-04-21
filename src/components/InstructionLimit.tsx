@@ -1,6 +1,11 @@
+import {
+  MAX_INSTRUCTION_LIMIT,
+  MIN_INSTRUCTION_LIMIT,
+} from "../interpreter/basic";
+
 type InstructionLimitProps = {
-  instructionLimit: number | null;
-  setInstructionLimit: (newLimit: number | null) => void;
+  instructionLimit: number;
+  setInstructionLimit: (newLimit: number) => void;
 };
 
 export const InstructionLimit = ({
@@ -16,15 +21,22 @@ export const InstructionLimit = ({
             aria-describedby="instruction-limit-description"
             className="instruction-limit-input"
             inputMode="numeric"
-            min={1}
+            max={MAX_INSTRUCTION_LIMIT}
+            min={MIN_INSTRUCTION_LIMIT}
             onChange={(e) => {
-              const value = e.target.value;
-              const newLimit = value === "" ? null : Number(value);
-              setInstructionLimit(newLimit);
+              const rawValue = Number(e.target.value);
+              if (!Number.isFinite(rawValue)) {
+                setInstructionLimit(MIN_INSTRUCTION_LIMIT);
+                return;
+              }
+              const boundedValue = Math.max(
+                MIN_INSTRUCTION_LIMIT,
+                Math.min(MAX_INSTRUCTION_LIMIT, Math.trunc(rawValue)),
+              );
+              setInstructionLimit(boundedValue);
             }}
-            placeholder="unlimited"
             type="number"
-            value={instructionLimit === null ? "" : instructionLimit}
+            value={instructionLimit}
           />
           <p id="instruction-limit-description">
             Enforced during code execution. The program will halt if it reaches

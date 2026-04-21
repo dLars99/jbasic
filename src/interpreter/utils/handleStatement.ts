@@ -31,8 +31,9 @@ export const handleStatement = async (ctx: RunnerCtx, statement: string) => {
     } else if (/^END\b/i.test(trimmedStmt)) {
       res = handleEnd(ctx, statement);
     } else {
-      ctx.onOutput("UNRECOGNIZED: " + statement);
-      ctx.instructionPointer += 1;
+      const lineNo = ctx.statements[ctx.instructionPointer].lineno;
+      ctx.onOutput("SYNTAX ERROR IN LINE " + (lineNo || "???"));
+      ctx.hasError = true;
     }
 
     if (res && typeof res.then === "function") await res;

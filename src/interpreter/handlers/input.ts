@@ -25,6 +25,10 @@ export const handleInput: StatementHandler<Promise<void>> = async function (
     } catch (err) {
       ctx.environment[name] = 0;
     }
+    ctx.instructionPointer += 1;
+  } else {
+    const lineNo = ctx.statements[ctx.instructionPointer].lineno;
+    ctx.onOutput("SYNTAX ERROR IN LINE " + (lineNo || "???"));
+    ctx.hasError = true;
   }
-  ctx.instructionPointer += 1;
 };

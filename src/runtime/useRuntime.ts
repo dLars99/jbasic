@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { createRunner } from "../interpreter/basic";
+import {
+  createRunner,
+  DEFAULT_INSTRUCTION_LIMIT,
+  MAX_INSTRUCTION_LIMIT,
+  MIN_INSTRUCTION_LIMIT,
+} from "../interpreter/basic";
+import { isOpenerToRuntimeMessage } from "./messages";
 
 type Runner = {
   start: () => void;
@@ -34,6 +40,19 @@ export const useRuntime = () => {
   }, []);
 
   useEffect(() => {
+    const trustedOrigin = window.location.origin;
+
+    const normalizeLimit = (candidate: unknown): number => {
+      if (typeof candidate !== "number" || !Number.isFinite(candidate)) {
+        return DEFAULT_INSTRUCTION_LIMIT;
+      }
+      const rounded = Math.trunc(candidate);
+      return Math.max(
+        MIN_INSTRUCTION_LIMIT,
+        Math.min(MAX_INSTRUCTION_LIMIT, rounded),
+      );
+    };
+
     const append = (message: string): void => {
       setLines((prev) => [...prev, String(message)]);
     };
@@ -50,7 +69,7 @@ export const useRuntime = () => {
         if (window.opener) {
           window.opener.postMessage(
             { type: "inputRequest", prompt: nextPromptText },
-            "*",
+            trustedOrigin,
           );
         }
 
@@ -63,8 +82,12 @@ export const useRuntime = () => {
     }
 
     function onMessage(event: MessageEvent): void {
+      if (!window.opener || window.opener.closed) return;
+      if (event.source !== window.opener) return;
+      if (event.origin !== trustedOrigin) return;
+
       const message = event.data;
-      if (!message || !message.type) return;
+      if (!isOpenerToRuntimeMessage(message)) return;
 
       if (message.type === "run") {
         setLines([]);
@@ -79,14 +102,14 @@ export const useRuntime = () => {
             if (window.opener) {
               window.opener.postMessage(
                 { type: "output", payload: output },
-                "*",
+                trustedOrigin,
               );
             }
           },
           async (nextPromptText) => {
             return requestInput(nextPromptText);
           },
-          message.instructionLimit ?? null,
+          normalizeLimit(message.instructionLimit),
         );
 
         runnerRef.current = runner;
@@ -107,8 +130,8 @@ export const useRuntime = () => {
 
     window.addEventListener("message", onMessage);
 
-    if (window.opener) {
-      window.opener.postMessage({ type: "ready" }, "*");
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage({ type: "ready" }, trustedOrigin);
     }
 
     return () => {

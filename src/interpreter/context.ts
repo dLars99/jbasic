@@ -4,17 +4,20 @@ import { safeEvalExpr } from "./utils/safeEvalExpr";
 export type Environment = Record<string, string | number | undefined>;
 export type Statement = { lineno: number | null; text: string };
 export type LineNumberIndexMap = Record<number, number>;
+export const LOOP_ITERATION_LIMIT = 100000;
 export type StackFrame = {
   name: string;
   end: number;
   step: number;
   loopInstruction: number;
+  iterations: number;
 };
 
 export class RunnerCtx {
   environment: Environment;
   instructionPointer: number;
   loopStack: StackFrame[];
+  hasError: boolean;
   readonly lineNumberToIndex: LineNumberIndexMap;
   readonly statements: Statement[];
   readonly onOutput: (output: string) => void;
@@ -32,6 +35,7 @@ export class RunnerCtx {
     this.instructionPointer = 0;
     this.lineNumberToIndex = lineNumberToIndex;
     this.loopStack = [];
+    this.hasError = false;
     this.statements = statements;
     this.onOutput = onOutput;
     this.onInput = onInput;
