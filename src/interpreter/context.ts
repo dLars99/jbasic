@@ -17,6 +17,7 @@ export class RunnerCtx {
   environment: Environment;
   instructionPointer: number;
   loopStack: StackFrame[];
+  hasError: boolean;
   readonly lineNumberToIndex: LineNumberIndexMap;
   readonly statements: Statement[];
   readonly onOutput: (output: string) => void;
@@ -34,6 +35,7 @@ export class RunnerCtx {
     this.instructionPointer = 0;
     this.lineNumberToIndex = lineNumberToIndex;
     this.loopStack = [];
+    this.hasError = false;
     this.statements = statements;
     this.onOutput = onOutput;
     this.onInput = onInput;

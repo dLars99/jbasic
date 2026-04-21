@@ -5,6 +5,12 @@ export const handleFor: StatementHandler = function (ctx, stmt) {
   const match = stmt.match(
     /^FOR\s+([A-Za-z][A-Za-z0-9_]*)\s*=\s*(.+?)\s+TO\s+(.+?)(?:\s+STEP\s+(.+))?$/i,
   );
+  if (!match) {
+    const lineNo = ctx.statements[ctx.instructionPointer].lineno;
+    ctx.onOutput("SYNTAX ERROR IN LINE " + (lineNo || "???"));
+    ctx.hasError = true;
+    return;
+  }
   if (match) {
     const [, name, startExpr, endExpr, stepExpr] = match;
     const start = Number(ctx.evaluateExpression(startExpr));

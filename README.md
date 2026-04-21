@@ -3,6 +3,7 @@
 A small web-based BASIC interpreter prototype.
 
 🤖 Made with clankers 🤖
+_Clank responsibly._
 
 ## Quick start
 

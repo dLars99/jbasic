@@ -57,6 +57,10 @@ export function createRunner(
         ctx.instructionPointer = instructionPointer;
         await handleStatement(ctx, statement);
         instructionPointer = ctx.instructionPointer;
+
+        if (ctx.hasError) {
+          break;
+        }
       }
       onOutput("PROGRAM FINISHED");
     }

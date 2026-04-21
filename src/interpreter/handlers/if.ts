@@ -7,6 +7,11 @@ export const handleIf: StatementHandler = function (ctx, stmt) {
     const cond = ctx.evaluateExpression(condition);
     if (cond) {
       const targetLineNumber = Number(targetStr);
+      if (targetLineNumber < 0) {
+        ctx.onOutput("ILLEGAL QUANTITY");
+        ctx.hasError = true;
+        return;
+      }
       if (ctx.lineNumberToIndex[targetLineNumber] != null)
         ctx.instructionPointer = ctx.lineNumberToIndex[targetLineNumber];
       else ctx.instructionPointer = ctx.statements.length;
@@ -14,6 +19,8 @@ export const handleIf: StatementHandler = function (ctx, stmt) {
       ctx.instructionPointer += 1;
     }
   } else {
-    ctx.instructionPointer += 1;
+    const lineNo = ctx.statements[ctx.instructionPointer].lineno;
+    ctx.onOutput("SYNTAX ERROR IN LINE " + (lineNo || "???"));
+    ctx.hasError = true;
   }
 };
