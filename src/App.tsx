@@ -35,9 +35,9 @@ export default function App(): JSX.Element {
   }, []);
 
   const handleRun = () => {
-    const runtimeOrigin = new URL("/runtime", window.location.href).origin;
+    const runtimeOrigin = window.location.origin;
     const runtimeWindow = window.open(
-      "/runtime",
+      `${import.meta.env.BASE_URL}runtime`,
       "jbasic-runtime",
       "width=600,height=400",
     );
