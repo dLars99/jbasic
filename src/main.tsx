@@ -8,6 +8,6 @@ import "./styles.css";
 
 createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    {window.location.pathname === "/runtime" ? <RuntimePage /> : <App />}
+    {window.location.pathname.endsWith("/runtime") ? <RuntimePage /> : <App />}
   </React.StrictMode>,
 );
