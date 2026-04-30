@@ -12,6 +12,7 @@ export default function App(): JSX.Element {
   const [instructionLimit, setInstructionLimit] = useState<number>(
     DEFAULT_INSTRUCTION_LIMIT,
   );
+  const [popupBlocked, setPopupBlocked] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const runtimeWindowRef = useRef<Window | null>(null);
   const runtimeOriginRef = useRef<string>(window.location.origin);
@@ -41,7 +42,11 @@ export default function App(): JSX.Element {
       "jbasic-runtime",
       "width=600,height=400",
     );
-    if (!runtimeWindow) return;
+    if (!runtimeWindow) {
+      setPopupBlocked(true);
+      return;
+    }
+    setPopupBlocked(false);
     runtimeWindowRef.current = runtimeWindow;
     runtimeOriginRef.current = runtimeOrigin;
     const onReady: EventListener = (event: MessageEvent) => {
@@ -69,6 +74,7 @@ export default function App(): JSX.Element {
       runtimeWindow.close();
       runtimeWindowRef.current = null;
     }
+    setPopupBlocked(false);
   };
 
   const handleSave = () => {
@@ -111,6 +117,7 @@ export default function App(): JSX.Element {
           onLoadClick={handleLoadClick}
           instructionLimit={instructionLimit}
           setInstructionLimit={setInstructionLimit}
+          popupBlocked={popupBlocked}
         />
       </aside>
     </main>
