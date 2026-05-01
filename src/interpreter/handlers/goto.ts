@@ -6,7 +6,8 @@ export const handleGoto: StatementHandler = function (ctx, stmt) {
   if (target != null && target >= 0 && ctx.lineNumberToIndex[target] != null) {
     ctx.instructionPointer = ctx.lineNumberToIndex[target];
   } else if (target != null && target >= 0) {
-    ctx.instructionPointer = ctx.statements.length;
+    ctx.onOutput("UNDEF'D LINE NUMBER " + target);
+    ctx.hasError = true;
   } else if (target != null && target < 0) {
     ctx.onOutput("ILLEGAL QUANTITY");
     ctx.hasError = true;

@@ -1,10 +1,10 @@
 export const defaultProgram: string = `10 LET X = 42
-20 PRINT "Hello from jBASIC"
+20 PRINT "Hello from jsBASIC"
 30 PRINT X
 40 END
 `;
 
-export const fullFeatureTestProgram: string = `10 PRINT "jBASIC FEATURE TEST"
+export const fullFeatureTestProgram: string = `10 PRINT "jsBASIC FEATURE TEST"
 20 LET A = 1
 30 PRINT "A=" + A
 40 FOR I = 1 TO 3

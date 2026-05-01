@@ -9,6 +9,7 @@ type ControlsProps = {
   onLoadClick: () => void;
   instructionLimit: number;
   setInstructionLimit: (newLimit: number) => void;
+  popupBlocked?: boolean;
 };
 
 export default function Controls({
@@ -18,6 +19,7 @@ export default function Controls({
   onLoadClick,
   instructionLimit,
   setInstructionLimit,
+  popupBlocked,
 }: ControlsProps): JSX.Element {
   return (
     <div aria-labelledby="controls-heading" className="controls">
@@ -35,6 +37,12 @@ export default function Controls({
         <Button className="stop" icon={FaStop} onClick={onStop} type="button">
           Stop
         </Button>
+
+        {popupBlocked && (
+          <p className="popup-blocked-warning">
+            Popup blocked — allow popups for this site and click Run again.
+          </p>
+        )}
       </div>
 
       <InstructionLimit

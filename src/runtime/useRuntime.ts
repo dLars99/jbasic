@@ -132,6 +132,26 @@ export const useRuntime = () => {
 
     if (window.opener && !window.opener.closed) {
       window.opener.postMessage({ type: "ready" }, trustedOrigin);
+    } else {
+      const stored = localStorage.getItem("jbasic:pendingRun");
+      if (stored) {
+        try {
+          const { code: savedCode, instructionLimit: savedLimit } =
+            JSON.parse(stored);
+          if (typeof savedCode === "string") {
+            const runner = createRunner(
+              savedCode,
+              append,
+              requestInput,
+              normalizeLimit(savedLimit),
+            );
+            runnerRef.current = runner;
+            runner.start();
+          }
+        } catch {
+          // ignore malformed storage data
+        }
+      }
     }
 
     return () => {
