@@ -16,6 +16,7 @@ export default function App(): JSX.Element {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const runtimeWindowRef = useRef<Window | null>(null);
   const runtimeOriginRef = useRef<string>(window.location.origin);
+  const lastRunRef = useRef<{ code: string; instructionLimit: number } | null>(null);
 
   useEffect(() => {
     localStorage.setItem("jbasic:code", code);
@@ -29,6 +30,11 @@ export default function App(): JSX.Element {
       if (!isRuntimeToOpenerMessage(message)) return;
       if (message.type === "output") {
         console.log("Runtime:", message.payload);
+      } else if (message.type === "ready" && lastRunRef.current) {
+        runtimeWindowRef.current!.postMessage(
+          { type: "run", ...lastRunRef.current },
+          runtimeOriginRef.current,
+        );
       }
     }
     window.addEventListener("message", onMessage);
@@ -37,6 +43,11 @@ export default function App(): JSX.Element {
 
   const handleRun = () => {
     const runtimeOrigin = window.location.origin;
+    lastRunRef.current = { code, instructionLimit };
+    localStorage.setItem(
+      "jbasic:pendingRun",
+      JSON.stringify({ code, instructionLimit }),
+    );
     const runtimeWindow = window.open(
       `${import.meta.env.BASE_URL}runtime`,
       "jbasic-runtime",
